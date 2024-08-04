@@ -345,7 +345,8 @@ namespace Tmds.DBus.CodeGen
             }
             if (propertyType != null)
             {
-                var fields = propertyType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                var fields = propertyType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                    .Where(fieldInfo => !fieldInfo.IsDefined(typeof(CompilerGeneratedAttribute), false));
                 foreach(var field in fields)
                 {
                     string propertyName;
