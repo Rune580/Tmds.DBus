@@ -350,7 +350,7 @@ namespace Tmds.DBus.CodeGen
                 {
                     string propertyName;
                     Type fieldType;
-                    PropertyTypeInspector.InspectField(field, out propertyName, out fieldType);
+                    PropertyTypeInspector.Inspect(field, out propertyName, out fieldType);
                     var propertySignature = Signature.GetSig(fieldType, isCompileTimeType: true);
                     var propertyAccess = field.GetCustomAttribute<PropertyAttribute>()?.Access ?? PropertyAccess.ReadWrite;
                     var description = new PropertyDescription(propertyName, propertySignature, propertyAccess);

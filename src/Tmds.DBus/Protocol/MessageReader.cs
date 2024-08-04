@@ -414,7 +414,7 @@ namespace Tmds.DBus.Protocol
                 {
                     Type fieldType;
                     string propertyName;
-                    PropertyTypeInspector.InspectField(field, out propertyName, out fieldType);
+                    PropertyTypeInspector.Inspect(field, out propertyName, out fieldType);
 
                     if (sig != Signature.GetSig(fieldType, isCompileTimeType: true))
                     {

@@ -507,7 +507,7 @@ namespace Tmds.DBus.Protocol
 
                 Type fieldType;
                 string fieldName;
-                PropertyTypeInspector.InspectField(fi, out fieldName, out fieldType);
+                PropertyTypeInspector.Inspect(fi, out fieldName, out fieldType);
                 Signature sig = Signature.GetSig(fieldType, isCompileTimeType: true);
 
                 WritePad (8);

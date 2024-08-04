@@ -9,7 +9,7 @@ namespace Tmds.DBus.CodeGen
 {
     internal class PropertyTypeInspector
     {
-        public static void InspectField(FieldInfo field, out string propertyName, out Type propertyType)
+        public static void Inspect(FieldInfo field, out string propertyName, out Type propertyType)
         {
             PropertyAttribute attribute = field.GetCustomAttribute<PropertyAttribute>();
 
@@ -29,6 +29,20 @@ namespace Tmds.DBus.CodeGen
             propertyType = field.FieldType;
             var typeInfo = propertyType.GetTypeInfo();
             bool isNullableType = typeInfo.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
+            if (isNullableType)
+            {
+                propertyType = Nullable.GetUnderlyingType(propertyType);
+            }
+        }
+
+        public static void Inspect(PropertyInfo propInfo, out string propertyName, out Type propertyType)
+        {
+            var attribute = propInfo.GetCustomAttribute<PropertyAttribute>();
+            
+            propertyName = attribute?.Name ?? propInfo.Name;
+            propertyType = propInfo.PropertyType;
+            var typeInfo = propertyType.GetTypeInfo();
+            var isNullableType = typeInfo.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
             if (isNullableType)
             {
                 propertyType = Nullable.GetUnderlyingType(propertyType);
