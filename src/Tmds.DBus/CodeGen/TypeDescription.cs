@@ -136,7 +136,7 @@ namespace Tmds.DBus.CodeGen
 
             IList<MethodDescription> methods = null;
             IList<SignalDescription> signals = null;
-            IList<PropertyDescription> properties = null;
+            IList<PropertyDescription> propertyDescriptions = null;
             MethodDescription propertyGetMethod = null;
             MethodDescription propertySetMethod = null;
             MethodDescription propertyGetAllMethod = null;
@@ -355,11 +355,28 @@ namespace Tmds.DBus.CodeGen
                     var propertySignature = Signature.GetSig(fieldType, isCompileTimeType: true);
                     var propertyAccess = field.GetCustomAttribute<PropertyAttribute>()?.Access ?? PropertyAccess.ReadWrite;
                     var description = new PropertyDescription(propertyName, propertySignature, propertyAccess);
-                    properties = properties ?? new List<PropertyDescription>();
-                    properties.Add(description);
+                    propertyDescriptions = propertyDescriptions ?? new List<PropertyDescription>();
+                    propertyDescriptions.Add(description);
+                }
+                
+                var properties = propertyType.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                foreach (var propInfo in properties)
+                {
+                    if (propInfo.GetGetMethod(false) == null)
+                        continue;
+
+                    var propertyAccess = PropertyAccess.Read;
+                    if (propInfo.GetSetMethod(false) != null)
+                        propertyAccess |= PropertyAccess.Write;
+                    
+                    PropertyTypeInspector.Inspect(propInfo, out var propertyName, out var propType);
+                    var propertySignature = Signature.GetSig(propType, isCompileTimeType: true);
+                    var description = new PropertyDescription(propertyName, propertySignature, propertyAccess);
+                    propertyDescriptions = propertyDescriptions ?? new List<PropertyDescription>();
+                    propertyDescriptions.Add(description);
                 }
             }
-            interfaces.Add(new InterfaceDescription(type, interfaceAttribute.Name, methods, signals, properties,
+            interfaces.Add(new InterfaceDescription(type, interfaceAttribute.Name, methods, signals, propertyDescriptions,
                                 propertyGetMethod, propertyGetAllMethod, propertySetMethod, propertiesChangedSignal));
         }
 
