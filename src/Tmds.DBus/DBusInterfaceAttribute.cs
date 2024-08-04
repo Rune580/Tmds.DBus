@@ -23,7 +23,7 @@ namespace Tmds.DBus
         public string GetPropertyMethod { get; set; }
 
         /// <summary>
-        /// Method name of the property get method. Defaults to <c>SetAsync</c>.
+        /// Method name of the property set method. Defaults to <c>SetAsync</c>.
         /// </summary>
         public string SetPropertyMethod { get; set; }
 
@@ -33,7 +33,7 @@ namespace Tmds.DBus
         public string GetAllPropertiesMethod { get; set; }
 
         /// <summary>
-        /// Method name of the property get all method. Defaults to <c>WatchPropertiesAsync</c>.
+        /// Method name of the signal watch properties method. Defaults to <c>WatchPropertiesAsync</c>.
         /// </summary>
         public string WatchPropertiesMethod { get; set; }
 
