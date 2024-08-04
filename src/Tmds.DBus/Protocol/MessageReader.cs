@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Tmds.DBus.CodeGen;
 
@@ -379,7 +380,10 @@ namespace Tmds.DBus.Protocol
         public T ReadDictionaryObject<T>()
         {
             var type = typeof(T);
-            FieldInfo[] fis = type.GetFields (BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            FieldInfo[] fis = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                .Where(fieldInfo => !fieldInfo.IsDefined(typeof(CompilerGeneratedAttribute), false))
+                .ToArray();
+            PropertyInfo[] propInfos = type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
             object val = Activator.CreateInstance (type);
 
@@ -404,11 +408,35 @@ namespace Tmds.DBus.Protocol
                 // we try and replace it with '_' and see if we find a match.
                 // The name may be prefixed with '_'.
                 var field = fis.Where(f =>   ((f.Name.Length == key.Length) || (f.Name.Length == key.Length + 1 && f.Name[0] == '_'))
-                                          && (f.Name.EndsWith(key, StringComparison.Ordinal) || (key.Contains("-") && f.Name.Replace('_', '-').EndsWith(key, StringComparison.Ordinal)))).SingleOrDefault();
+                                          && (f.Name.EndsWith(key, StringComparison.Ordinal) || (key.Contains("-") && f.Name.Replace('_', '-').EndsWith(key, StringComparison.Ordinal))))
+                    .SingleOrDefault();
+                
 
                 if (field == null)
                 {
-                    var value = Read(sig.ToType());
+                    var prop = propInfos.SingleOrDefault(propInfo =>
+                        (propInfo.Name.Length == key.Length ||
+                         (propInfo.Name.Length == key.Length + 1 && propInfo.Name[0] == '_')) &&
+                        (propInfo.Name.EndsWith(key, StringComparison.Ordinal) || (key.Contains("-") &&
+                            propInfo.Name.Replace('_', '-').EndsWith(key, StringComparison.Ordinal))));
+                    
+                    if (prop == null)
+                    {
+                        var value = Read(sig.ToType());
+                    }
+                    else
+                    {
+                        PropertyTypeInspector.Inspect(prop, out var propertyName, out var propertyType);
+                    
+                        if (sig != Signature.GetSig(propertyType, isCompileTimeType: true))
+                        {
+                            throw new ArgumentException($"Dictionary '{type.FullName}' property '{prop.Name}' with type '{propertyType.FullName}' cannot be read from D-Bus type '{sig}'");
+                        }
+                    
+                        var readValue = Read(propertyType);
+                    
+                        prop.SetValue(val, readValue);
+                    }
                 }
                 else
                 {

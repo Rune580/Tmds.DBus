@@ -12,6 +12,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Tmds.DBus.CodeGen;
 
 namespace Tmds.DBus.Protocol
@@ -489,7 +490,12 @@ namespace Tmds.DBus.Protocol
         public void WriteDictionaryObject<T>(T val)
         {
             var type = typeof(T);
-            FieldInfo[] fis = type.GetFields (BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            FieldInfo[] fis = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                .Where(fieldInfo => !fieldInfo.IsDefined(typeof(CompilerGeneratedAttribute), false))
+                .ToArray();
+            PropertyInfo[] propInfos = type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                .Where(propInfo => propInfo.GetGetMethod(false) != null)
+                .ToArray();
 
             long origPos = stream.Position;
             // Pre-write array length field, we overwrite it at the end with the correct value
@@ -514,6 +520,21 @@ namespace Tmds.DBus.Protocol
                 WriteString(fieldName);
                 WriteSignature(sig);
                 Write(fieldType, fieldVal, isCompileTimeType: true);
+            }
+
+            foreach (var propInfo in propInfos)
+            {
+                var propValue = propInfo.GetValue(val);
+                if (propValue == null)
+                    continue;
+                
+                PropertyTypeInspector.Inspect(propInfo, out var propName, out var propType);
+                var sig = Signature.GetSig(propType, isCompileTimeType: true);
+                
+                WritePad(8);
+                WriteString(propName);
+                WriteSignature(sig);
+                Write(propType, propValue, isCompileTimeType: true);
             }
 
             long endPos = stream.Position;
